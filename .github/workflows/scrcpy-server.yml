@@ -1,0 +1,45 @@
+name: Build scrcpy-server
+
+on:
+  push:
+    branches: [ feature/websocket-v1.19.x ]
+  pull_request:
+    branches: [ feature/websocket-v1.19.x ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y ffmpeg libsdl2-2.0-0 adb wget \
+                            gcc git pkg-config meson ninja-build libsdl2-dev \
+                            libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
+
+    - name: Set ANDROID_SDK_ROOT
+      run: |
+        echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+
+    - name: Build server
+      run: |
+        meson x --buildtype release --strip -Db_lto=true
+        ninja -Cx
+
+    - name: Upload scrcpy-server.jar
+      uses: actions/upload-artifact@v2
+      with:
+        name: scrcpy-server
+        path: x/server/scrcpy-server.jar

@@ -24,8 +24,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y ffmpeg libsdl2-2.0-0 adb wget \
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg libsdl2-2.0-0 adb wget \
                             gcc git pkg-config meson ninja-build libsdl2-dev \
                             libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
 
@@ -38,8 +38,20 @@ jobs:
         meson x --buildtype release --strip -Db_lto=true
         ninja -Cx
 
-    - name: Upload scrcpy-server.jar
+    - name: Locate server file
+      run: |
+        SERVER_FILE=$(find . -name "scrcpy-server.jar" -o -name "scrcpy-server")
+        echo "SERVER_FILE=$SERVER_FILE" >> $GITHUB_ENV
+
+    - name: Upload server file
       uses: actions/upload-artifact@v2
       with:
         name: scrcpy-server
-        path: x/server/scrcpy-server.jar
+        path: ${{ env.SERVER_FILE }}
+      if: env.SERVER_FILE != ''
+
+    - name: Check build output
+      if: failure()
+      run: |
+        echo "Build failed or server file not found. Checking output directory:"
+        find . -type f
